@@ -35,7 +35,7 @@ scripts/run_backend.sh
 Health check:
 
 ```bash
-curl http://127.0.0.1:8766/health
+curl http://127.0.0.1:8776/health
 ```
 
 Generate a mock issue:
@@ -47,7 +47,7 @@ scripts/generate_mock_issue.sh "Calder, Thor, and the Huemon Trainer build a liv
 Generate through API:
 
 ```bash
-curl -X POST http://127.0.0.1:8766/api/generate   -H 'Content-Type: application/json'   -d '{"idea":"A Hapa campfire becomes a living comic","panel_count":6}'
+curl -X POST http://127.0.0.1:8776/api/generate   -H 'Content-Type: application/json'   -d '{"idea":"A Hapa campfire becomes a living comic","panel_count":6}'
 ```
 
 ## Desktop launcher
@@ -61,7 +61,7 @@ A one-click launcher was created at:
 Double-click it to:
 
 1. ensure the Hapa LTX Node is running at `http://127.0.0.1:8753`, using `/Users/calderwong/Documents/Codex/2026-05-19/thoroughly-review-the-hapa-worldbuilding-wiki/hapa-ltx-node/scripts/launch-local-mlx.sh`;
-2. start this app's backend at `http://127.0.0.1:8766` with `LIVING_COMIC_PROVIDER=hapa-ltx` and `LIVING_COMIC_TTS_PROVIDER=mac-say`;
+2. start this app's backend at `http://127.0.0.1:8776` with `LIVING_COMIC_PROVIDER=hapa-ltx` and `LIVING_COMIC_TTS_PROVIDER=mac-say`;
 3. launch the SwiftUI viewer.
 
 Logs go to:
@@ -127,7 +127,7 @@ Click **Generate Full Issue**. Click panels to activate/zoom the layout.
 Backend `HermesLLM` can call Hermes directly:
 
 ```bash
-curl -X POST http://127.0.0.1:8766/api/generate   -H 'Content-Type: application/json'   -d '{"idea":"Continue this comic with Thor interrupting the trainer","panel_count":8,"use_hermes":true,"hermes_profile":"mtplxqwen36"}'
+curl -X POST http://127.0.0.1:8776/api/generate   -H 'Content-Type: application/json'   -d '{"idea":"Continue this comic with Thor interrupting the trainer","panel_count":8,"use_hermes":true,"hermes_profile":"mtplxqwen36"}'
 ```
 
 From Hermes, you can control it with local HTTP commands once the backend is running.

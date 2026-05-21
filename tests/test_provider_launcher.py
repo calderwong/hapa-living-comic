@@ -22,11 +22,20 @@ class ProviderAndLauncherTests(unittest.TestCase):
         self.assertTrue(launcher.exists())
         self.assertTrue(os.access(launcher, os.X_OK))
         text = launcher.read_text()
-        self.assertIn("LIVING_COMIC_PROVIDER", text)
-        self.assertIn("hapa-ltx", text)
+        self.assertIn("LIVING_COMIC_PORT", text)
+        self.assertIn("8776", text)
+        self.assertIn("living-comic-book", text)
         self.assertIn("launch-local-mlx.sh", text)
         self.assertTrue(desktop.exists())
         self.assertTrue(os.access(desktop, os.X_OK))
+
+    def test_swiftui_uses_dedicated_living_comic_port_and_checks_http_status(self):
+        swift = Path("/Users/calderwong/Desktop/hapa-living-comic/swiftui/LivingComicBook/LivingComicBook/main.swift")
+        text = swift.read_text()
+        self.assertIn("http://127.0.0.1:8776", text)
+        self.assertIn("HTTPURLResponse", text)
+        self.assertIn("Backend HTTP", text)
+        self.assertNotIn("http://127.0.0.1:8766", text)
 
 
 if __name__ == "__main__":

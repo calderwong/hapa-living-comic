@@ -27,7 +27,7 @@ final class ComicViewModel: ObservableObject {
     @Published var selectedPanel: Panel?
     @Published var isGenerating = false
     @Published var status = "Ready"
-    let base = URL(string: "http://127.0.0.1:8766")!
+    let base = URL(string: ProcessInfo.processInfo.environment["LIVING_COMIC_BACKEND_URL"] ?? "http://127.0.0.1:8776")!
 
     func generate() {
         isGenerating = true
@@ -38,11 +38,23 @@ final class ComicViewModel: ObservableObject {
                 req.httpMethod = "POST"
                 req.addValue("application/json", forHTTPHeaderField: "Content-Type")
                 req.httpBody = try JSONSerialization.data(withJSONObject: ["idea": idea, "panel_count": 6, "style": "dark cinematic comic book, polished gutters, speech bubbles"])
-                let (data, _) = try await URLSession.shared.data(for: req)
-                let decoded = try JSONDecoder().decode(Issue.self, from: data)
-                issue = decoded
-                selectedPanel = decoded.panels.first
-                status = "Generated \(decoded.panels.count) panels"
+                let (data, response) = try await URLSession.shared.data(for: req)
+                guard let http = response as? HTTPURLResponse else {
+                    throw NSError(domain: "LivingComic", code: -1, userInfo: [NSLocalizedDescriptionKey: "No HTTP response from backend"])
+                }
+                guard (200..<300).contains(http.statusCode) else {
+                    let body = String(data: data, encoding: .utf8) ?? "<unreadable body>"
+                    throw NSError(domain: "LivingComic", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Backend HTTP \(http.statusCode): \(body)"])
+                }
+                do {
+                    let decoded = try JSONDecoder().decode(Issue.self, from: data)
+                    issue = decoded
+                    selectedPanel = decoded.panels.first
+                    status = "Generated \(decoded.panels.count) panels"
+                } catch {
+                    let body = String(data: data, encoding: .utf8) ?? "<unreadable body>"
+                    throw NSError(domain: "LivingComic", code: -2, userInfo: [NSLocalizedDescriptionKey: "Could not decode Issue JSON: \(error.localizedDescription). Body: \(body.prefix(800))"])
+                }
             } catch {
                 status = "Error: \(error.localizedDescription)"
             }

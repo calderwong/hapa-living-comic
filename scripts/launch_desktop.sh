@@ -13,6 +13,7 @@ export LIVING_COMIC_PROVIDER="${LIVING_COMIC_PROVIDER:-hapa-ltx}"
 export LIVING_COMIC_TTS_PROVIDER="${LIVING_COMIC_TTS_PROVIDER:-mac-say}"
 export HAPA_LTX_URL="${HAPA_LTX_URL:-http://127.0.0.1:8753}"
 export HAPA_LTX_NODE_ROOT="${HAPA_LTX_NODE_ROOT:-$LTX_DIR}"
+export LIVING_COMIC_PORT="${LIVING_COMIC_PORT:-8776}"
 
 if [ -f "$HAPA_LTX_NODE_ROOT/.node_token" ]; then
   export HAPA_LTX_TOKEN_FILE="${HAPA_LTX_TOKEN_FILE:-$HAPA_LTX_NODE_ROOT/.node_token}"
@@ -41,11 +42,12 @@ ensure_ltx_node() {
 }
 
 ensure_backend() {
-  if curl -fsS --max-time 2 http://127.0.0.1:8766/health >/dev/null 2>&1; then
-    echo "Living Comic backend already running at http://127.0.0.1:8766"
+  local backend_url="http://127.0.0.1:${LIVING_COMIC_PORT}"
+  if curl -fsS --max-time 2 "$backend_url/health" | grep -q 'living-comic-book'; then
+    echo "Living Comic backend already running at $backend_url"
     return 0
   fi
-  echo "Starting Living Comic backend..."
+  echo "Starting Living Comic backend at $backend_url..."
   if [ ! -d .venv ]; then
     python3 -m venv .venv
     . .venv/bin/activate
@@ -54,10 +56,10 @@ ensure_backend() {
   else
     . .venv/bin/activate
   fi
-  python -m uvicorn living_comic.api.server:app --host 127.0.0.1 --port 8766 > "$LOG_DIR/backend.log" 2>&1 &
+  python -m uvicorn living_comic.api.server:app --host 127.0.0.1 --port "$LIVING_COMIC_PORT" > "$LOG_DIR/backend.log" 2>&1 &
   for _ in {1..45}; do
-    if curl -fsS --max-time 2 http://127.0.0.1:8766/health >/dev/null 2>&1; then
-      echo "Living Comic backend is ready."
+    if curl -fsS --max-time 2 "$backend_url/health" | grep -q 'living-comic-book'; then
+      echo "Living Comic backend is ready at $backend_url."
       return 0
     fi
     sleep 1
