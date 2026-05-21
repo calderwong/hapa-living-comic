@@ -2,12 +2,14 @@
 
 Local-first prototype for a beautiful Living Comic Book desktop app.
 
-The prototype is intentionally end-to-end with mock providers first, so the app works before wiring expensive/local generative nodes. The provider interfaces are ready for:
+The prototype supports an end-to-end mock mode plus a real local-node mode for the Hapa LTX Node.
+
+Provider interfaces are wired for:
 
 - Hermes/Qwen/Mistral script generation
-- custom image generation node / ComfyUI workflow
-- LTX 2.3 image-to-video animation
-- MimikaStudio / Qwen3-TTS / mlx-audio voice cloning
+- Hapa LTX Node text-to-image via `z_image_mflux`
+- Hapa LTX Node LTX 2.3 image-to-video via `local_mlx`
+- local macOS `say` TTS now; command-template voice cloning once MimikaStudio/Qwen3-TTS/mlx-audio command is provided
 
 ## Folder structure
 
@@ -48,6 +50,67 @@ Generate through API:
 curl -X POST http://127.0.0.1:8766/api/generate   -H 'Content-Type: application/json'   -d '{"idea":"A Hapa campfire becomes a living comic","panel_count":6}'
 ```
 
+## Desktop launcher
+
+A one-click launcher was created at:
+
+```text
+/Users/calderwong/Desktop/Hapa Living Comic.command
+```
+
+Double-click it to:
+
+1. ensure the Hapa LTX Node is running at `http://127.0.0.1:8753`, using `/Users/calderwong/Documents/Codex/2026-05-19/thoroughly-review-the-hapa-worldbuilding-wiki/hapa-ltx-node/scripts/launch-local-mlx.sh`;
+2. start this app's backend at `http://127.0.0.1:8766` with `LIVING_COMIC_PROVIDER=hapa-ltx` and `LIVING_COMIC_TTS_PROVIDER=mac-say`;
+3. launch the SwiftUI viewer.
+
+Logs go to:
+
+```text
+/Users/calderwong/Desktop/hapa-living-comic/logs
+```
+
+## Real local generator mode
+
+With the Hapa LTX Node already running:
+
+```bash
+cd /Users/calderwong/Desktop/hapa-living-comic
+export PYTHONPATH=backend
+export LIVING_COMIC_PROVIDER=hapa-ltx
+export LIVING_COMIC_TTS_PROVIDER=mac-say
+export HAPA_LTX_URL=http://127.0.0.1:8753
+export HAPA_LTX_TOKEN_FILE="/Users/calderwong/Documents/Codex/2026-05-19/thoroughly-review-the-hapa-worldbuilding-wiki/hapa-ltx-node/.node_token"
+python3 -m living_comic.cli "Calder and Thor open the living comic engine" --provider hapa-ltx --tts-provider mac-say --panels 1
+```
+
+Image settings can be tuned with:
+
+```bash
+export HAPA_LTX_IMAGE_BACKEND=z_image_mflux
+export HAPA_LTX_IMAGE_WIDTH=1024
+export HAPA_LTX_IMAGE_HEIGHT=1024
+export HAPA_LTX_IMAGE_STEPS=9
+```
+
+Video settings can be tuned with:
+
+```bash
+export HAPA_LTX_VIDEO_BACKEND=local_mlx
+export HAPA_LTX_VIDEO_WIDTH=384
+export HAPA_LTX_VIDEO_HEIGHT=256
+export HAPA_LTX_VIDEO_SECONDS=1
+export HAPA_LTX_VIDEO_FPS=24
+```
+
+For voice cloning, set a command template instead of macOS `say`:
+
+```bash
+export LIVING_COMIC_TTS_PROVIDER=command
+export LIVING_COMIC_VOICE_REFERENCE=/path/to/calder-reference.wav
+export LIVING_COMIC_TTS_CMD='mlx-audio tts --text {text_json} --ref {reference_clip} --output {out}'
+```
+
 ## Run SwiftUI viewer
 
 In a second terminal, with backend running:
@@ -77,11 +140,13 @@ Future deeper integration options:
 
 ## Local node integration points
 
-- Image generation: `backend/living_comic/adapters/comfy_image.py`
-- LTX 2.3: `backend/living_comic/adapters/ltx23.py`
-- Voice cloning: `backend/living_comic/adapters/tts.py`
+- Hapa LTX Node adapter: `backend/living_comic/adapters/hapa_ltx.py`
+- TTS adapters: `backend/living_comic/adapters/tts.py`
+- Provider selection factory: `backend/living_comic/providers.py`
+- Legacy/alternate Comfy adapter stub: `backend/living_comic/adapters/comfy_image.py`
+- Legacy/alternate generic LTX adapter stub: `backend/living_comic/adapters/ltx23.py`
 
-Right now those are safe adapters/placeholders because this environment did not expose a running ComfyUI server, Hyperframes CLI, LTX command, MimikaStudio, Qwen3-TTS, or mlx-audio command during the initial scaffold.
+Hyperframes/Codex note: this Hermes environment did not expose a `codex` binary, `hyperframes` CLI, or installed Hermes-visible hyperframes skill. The app is therefore wired directly to the Hapa LTX Node as requested. A future Hyperframes adapter can call the same saved issue JSON and panel asset paths once the Codex-side skill/CLI is exposed here.
 
 ## Tests
 

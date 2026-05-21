@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from living_comic.pipeline import ComicPipeline, MockImageGenerator, MockLLM, MockLTXAnimator, MockTTS, HermesLLM
+from living_comic.providers import build_pipeline
 from living_comic.storage import ProjectStore
 
 
@@ -18,6 +18,8 @@ class GenerateRequest(BaseModel):
     style: str = "dark ink cinematic comic"
     use_hermes: bool = False
     hermes_profile: str = "default"
+    provider: Optional[str] = None
+    tts_provider: Optional[str] = None
 
 
 def create_app(data_root: Optional[Path] = None) -> FastAPI:
@@ -27,7 +29,7 @@ def create_app(data_root: Optional[Path] = None) -> FastAPI:
 
     @app.get("/health")
     def health():
-        return {"ok": True, "service": "living-comic-book", "data_root": str(store.root)}
+        return {"ok": True, "service": "living-comic-book", "data_root": str(store.root), "provider": os.environ.get("LIVING_COMIC_PROVIDER", "mock"), "tts_provider": os.environ.get("LIVING_COMIC_TTS_PROVIDER", "mock")}
 
     @app.get("/api/issues")
     def list_issues():
@@ -42,8 +44,7 @@ def create_app(data_root: Optional[Path] = None) -> FastAPI:
 
     @app.post("/api/generate")
     def generate(req: GenerateRequest):
-        llm = HermesLLM(req.hermes_profile) if req.use_hermes else MockLLM()
-        pipeline = ComicPipeline(store, llm, MockImageGenerator(), MockLTXAnimator(), MockTTS())
+        pipeline = build_pipeline(store, use_hermes=req.use_hermes, hermes_profile=req.hermes_profile, provider=req.provider, tts_provider=req.tts_provider)
         return pipeline.generate_full_issue(req.idea, req.panel_count, req.style).to_dict()
 
     return app

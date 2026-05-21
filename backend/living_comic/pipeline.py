@@ -117,11 +117,11 @@ class ComicPipeline:
             audio_rel = f"{base}/dialogue.txt"
             video_rel = f"{base}/motion.txt"
             image_path = self.image_generator.generate_panel(issue, panel, self.store.asset_path(image_rel))
-            self.tts.synthesize_dialogue(issue, panel, self.store.asset_path(audio_rel))
-            self.animator.animate_panel(issue, panel, image_path, self.store.asset_path(video_rel))
-            panel.image_path = image_rel
-            panel.audio_path = audio_rel
-            panel.video_path = video_rel
+            audio_path = self.tts.synthesize_dialogue(issue, panel, self.store.asset_path(audio_rel))
+            video_path = self.animator.animate_panel(issue, panel, image_path, self.store.asset_path(video_rel))
+            panel.image_path = str(image_path.relative_to(self.store.assets_dir))
+            panel.audio_path = str(audio_path.relative_to(self.store.assets_dir))
+            panel.video_path = str(video_path.relative_to(self.store.assets_dir))
             panel.status = "assembled"
         self.store.save_issue(issue)
         return issue

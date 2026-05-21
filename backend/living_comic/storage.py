@@ -11,7 +11,7 @@ class ProjectStore:
     """Filesystem project store: project JSON plus asset folder."""
 
     def __init__(self, root: Path):
-        self.root = Path(root)
+        self.root = Path(root).expanduser().resolve()
         self.projects_dir = self.root / "projects"
         self.assets_dir = self.root / "assets"
         self.projects_dir.mkdir(parents=True, exist_ok=True)
