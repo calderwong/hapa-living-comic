@@ -6,6 +6,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from living_comic.providers import build_pipeline
@@ -26,6 +27,7 @@ def create_app(data_root: Optional[Path] = None) -> FastAPI:
     app = FastAPI(title="Living Comic Book", version="0.1.0")
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
     store = ProjectStore(data_root or Path(os.environ.get("LIVING_COMIC_DATA", "./runtime")))
+    app.mount("/assets", StaticFiles(directory=str(store.assets_dir)), name="assets")
 
     @app.get("/health")
     def health():
