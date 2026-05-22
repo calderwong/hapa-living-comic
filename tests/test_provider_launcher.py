@@ -35,6 +35,10 @@ class ProviderAndLauncherTests(unittest.TestCase):
         self.assertIn("http://127.0.0.1:8776", text)
         self.assertIn("HTTPURLResponse", text)
         self.assertIn("Backend HTTP", text)
+        self.assertIn("timeoutIntervalForRequest = 3600", text)
+        self.assertIn("@Published var panelCount = 1", text)
+        self.assertIn("Generate Preview Panel", text)
+        self.assertIn("panel_count\": panelCount", text)
         self.assertNotIn("http://127.0.0.1:8766", text)
 
 

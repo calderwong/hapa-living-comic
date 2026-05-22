@@ -27,18 +27,25 @@ final class ComicViewModel: ObservableObject {
     @Published var selectedPanel: Panel?
     @Published var isGenerating = false
     @Published var status = "Ready"
+    @Published var panelCount = 1
     let base = URL(string: ProcessInfo.processInfo.environment["LIVING_COMIC_BACKEND_URL"] ?? "http://127.0.0.1:8776")!
+    let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 3600
+        config.timeoutIntervalForResource = 3600
+        return URLSession(configuration: config)
+    }()
 
     func generate() {
         isGenerating = true
-        status = "Generating issue..."
+        status = panelCount == 1 ? "Generating 1 real LTX panel..." : "Generating \(panelCount) real LTX panels; this can take a while..."
         Task {
             do {
                 var req = URLRequest(url: base.appendingPathComponent("/api/generate"))
                 req.httpMethod = "POST"
                 req.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                req.httpBody = try JSONSerialization.data(withJSONObject: ["idea": idea, "panel_count": 6, "style": "dark cinematic comic book, polished gutters, speech bubbles"])
-                let (data, response) = try await URLSession.shared.data(for: req)
+                req.httpBody = try JSONSerialization.data(withJSONObject: ["idea": idea, "panel_count": panelCount, "style": "dark cinematic comic book, polished gutters, speech bubbles"])
+                let (data, response) = try await session.data(for: req)
                 guard let http = response as? HTTPURLResponse else {
                     throw NSError(domain: "LivingComic", code: -1, userInfo: [NSLocalizedDescriptionKey: "No HTTP response from backend"])
                 }
@@ -90,7 +97,12 @@ struct ContentView: View {
             VStack(alignment: .leading) {
                 Text("Living Comic Book").font(.largeTitle.bold())
                 TextEditor(text: $vm.idea).frame(height: 120).border(.gray.opacity(0.3))
-                Button(vm.isGenerating ? "Generating..." : "Generate Full Issue") { vm.generate() }.keyboardShortcut("g")
+                Stepper("Panels: \(vm.panelCount)", value: $vm.panelCount, in: 1...12)
+                    .disabled(vm.isGenerating)
+                Text("Tip: real Hapa-LTX panels are slow. Start with 1 panel, then raise this for longer runs.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button(vm.isGenerating ? "Generating..." : (vm.panelCount == 1 ? "Generate Preview Panel" : "Generate Issue")) { vm.generate() }.keyboardShortcut("g")
                 Text(vm.status).foregroundStyle(.secondary)
                 Spacer()
             }.padding().frame(minWidth: 320)
