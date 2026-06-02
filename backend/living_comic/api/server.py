@@ -13,6 +13,25 @@ from living_comic.providers import build_pipeline
 from living_comic.storage import ProjectStore
 
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DOCS = {
+    "readme": "README.md",
+    "agents": "AGENTS.md",
+    "feature-parity": "docs/FEATURE_PARITY.md",
+}
+
+
+def _doc_entry(doc_id: str, relative: str) -> dict:
+    path = REPO_ROOT / relative
+    return {
+        "id": doc_id,
+        "title": relative,
+        "source": relative,
+        "exists": path.exists(),
+        "status": "available" if path.exists() else "DOCS MISSING",
+    }
+
+
 class GenerateRequest(BaseModel):
     idea: str
     panel_count: int = 8
@@ -32,6 +51,37 @@ def create_app(data_root: Optional[Path] = None) -> FastAPI:
     @app.get("/health")
     def health():
         return {"ok": True, "service": "living-comic-book", "data_root": str(store.root), "provider": os.environ.get("LIVING_COMIC_PROVIDER", "mock"), "tts_provider": os.environ.get("LIVING_COMIC_TTS_PROVIDER", "mock")}
+
+    @app.get("/capabilities")
+    def capabilities():
+        return {
+            "service": "living-comic-book",
+            "status": "prototype",
+            "surfaces": {
+                "api": ["GET /health", "GET /capabilities", "GET /api/issues", "GET /api/issues/{issue_id}", "POST /api/generate", "GET /api/docs", "GET /api/docs/{doc_id}"],
+                "cli": ["python3 -m living_comic.cli <idea>", "scripts/generate_mock_issue.sh <idea>", "scripts/run_backend.sh", "scripts/launch_desktop.sh"],
+                "ui": ["SwiftUI macOS viewer/editor", "Docs / README sheet rendering README.md and parity docs"],
+            },
+            "truth": "Docs/API/CLI/UI parity is partial: generation is implemented across all three surfaces; issue listing is API-only; native UI docs viewer now exposes repo documentation through the backend whitelist.",
+        }
+
+    @app.get("/api/docs")
+    def list_docs():
+        return {
+            "root": "hapa-living-comic",
+            "docs": [_doc_entry(doc_id, relative) for doc_id, relative in DOCS.items()],
+            "safety": "Markdown documents are served from a fixed allowlist only; the SwiftUI client renders Markdown text and does not execute embedded HTML or scripts.",
+        }
+
+    @app.get("/api/docs/{doc_id}")
+    def get_doc(doc_id: str):
+        relative = DOCS.get(doc_id)
+        if not relative:
+            raise HTTPException(status_code=404, detail="Unknown document id")
+        path = REPO_ROOT / relative
+        if not path.exists():
+            raise HTTPException(status_code=404, detail=f"Document missing: {relative}")
+        return {"id": doc_id, "title": relative, "source": relative, "markdown": path.read_text(encoding="utf-8")}
 
     @app.get("/api/issues")
     def list_issues():

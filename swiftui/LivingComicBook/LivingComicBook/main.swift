@@ -198,8 +198,153 @@ struct PanelCard: View {
     }
 }
 
+struct DocEntry: Codable, Identifiable {
+    let id: String
+    let title: String
+    let source: String
+    let exists: Bool
+    let status: String
+}
+
+struct DocsIndex: Codable {
+    let root: String
+    let docs: [DocEntry]
+    let safety: String
+}
+
+struct DocPayload: Codable {
+    let id: String
+    let title: String
+    let source: String
+    let markdown: String
+}
+
+@MainActor
+final class DocsViewModel: ObservableObject {
+    @Published var docs: [DocEntry] = []
+    @Published var selected: DocEntry?
+    @Published var markdown = ""
+    @Published var source = ""
+    @Published var safety = "Loading docs manifest..."
+    @Published var status = "DOCS UNKNOWN"
+
+    let base = URL(string: ProcessInfo.processInfo.environment["LIVING_COMIC_BACKEND_URL"] ?? "http://127.0.0.1:8776")!
+
+    func loadIndex() {
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: base.appendingPathComponent("/api/docs"))
+                let index = try JSONDecoder().decode(DocsIndex.self, from: data)
+                docs = index.docs
+                safety = index.safety
+                if selected == nil, let readme = docs.first(where: { $0.id == "readme" }) ?? docs.first {
+                    await load(readme)
+                }
+            } catch {
+                status = "DOCS UNKNOWN: \(error.localizedDescription)"
+                markdown = "The backend docs endpoint is unavailable. Start scripts/run_backend.sh, then reopen Docs / README."
+            }
+        }
+    }
+
+    func load(_ doc: DocEntry) async {
+        selected = doc
+        source = doc.source
+        guard doc.exists else {
+            status = doc.status
+            markdown = "# \(doc.title)\n\n\(doc.status): this document is not present in the repo yet."
+            return
+        }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: base.appendingPathComponent("/api/docs/\(doc.id)"))
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                status = "DOCS UNKNOWN"
+                markdown = "# \(doc.title)\n\nCould not load document from backend."
+                return
+            }
+            let payload = try JSONDecoder().decode(DocPayload.self, from: data)
+            markdown = payload.markdown
+            source = payload.source
+            status = "available"
+        } catch {
+            status = "DOCS UNKNOWN: \(error.localizedDescription)"
+            markdown = "# \(doc.title)\n\nCould not decode document payload."
+        }
+    }
+}
+
+struct DocsView: View {
+    @StateObject private var vm = DocsViewModel()
+
+    private var renderedMarkdown: AttributedString {
+        (try? AttributedString(markdown: vm.markdown)) ?? AttributedString(vm.markdown)
+    }
+
+    var body: some View {
+        NavigationSplitView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Docs / README")
+                    .font(.title2.bold())
+                Text("Repo Markdown viewer")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(vm.docs) { doc in
+                    Button {
+                        Task { await vm.load(doc) }
+                    } label: {
+                        HStack {
+                            Image(systemName: doc.exists ? "doc.text" : "exclamationmark.triangle")
+                            VStack(alignment: .leading) {
+                                Text(doc.title)
+                                Text(doc.status).font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                }
+                Spacer()
+                Text(vm.safety)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .frame(minWidth: 260)
+        } detail: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(vm.selected?.title ?? "README.md")
+                        .font(.title.bold())
+                    Spacer()
+                    Text(vm.status)
+                        .font(.caption.monospaced())
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(vm.status == "available" ? Color.green.opacity(0.18) : Color.orange.opacity(0.22))
+                        .clipShape(Capsule())
+                }
+                Text("Source: \(vm.source.isEmpty ? "DOCS UNKNOWN" : vm.source)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                Divider()
+                ScrollView {
+                    Text(renderedMarkdown)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 40)
+                }
+            }
+            .padding(24)
+            .background(Color(red:0.025, green:0.027, blue:0.04))
+        }
+        .frame(minWidth: 1000, minHeight: 720)
+        .onAppear { vm.loadIndex() }
+    }
+}
+
 struct ContentView: View {
     @StateObject var vm = ComicViewModel()
+    @State private var showingDocs = false
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading) {
@@ -211,6 +356,8 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Button(vm.isGenerating ? "Generating..." : (vm.panelCount == 1 ? "Generate Preview Panel" : "Generate Issue")) { vm.generate() }.keyboardShortcut("g")
+                Button("Docs / README") { showingDocs = true }
+                    .keyboardShortcut("?", modifiers: [.command])
                 Text(vm.status).foregroundStyle(.secondary)
                 if let issue = vm.issue {
                     Divider().padding(.vertical, 8)
@@ -238,6 +385,7 @@ struct ContentView: View {
                 }.background(Color(red:0.025, green:0.027, blue:0.04))
             }
         }.frame(minWidth: 1100, minHeight: 760)
+        .sheet(isPresented: $showingDocs) { DocsView() }
     }
 }
 

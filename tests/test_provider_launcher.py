@@ -8,6 +8,8 @@ from living_comic.adapters.hapa_ltx import HapaLTXAnimator, HapaLTXImageGenerato
 from living_comic.providers import build_pipeline
 from living_comic.storage import ProjectStore
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 
 class ProviderAndLauncherTests(unittest.TestCase):
     def test_hapa_ltx_provider_builds_real_local_generators(self):
@@ -17,20 +19,19 @@ class ProviderAndLauncherTests(unittest.TestCase):
             self.assertIsInstance(pipeline.animator, HapaLTXAnimator)
 
     def test_desktop_launcher_exists_and_defaults_to_hapa_ltx(self):
-        launcher = Path("/Users/calderwong/Desktop/hapa-living-comic/scripts/launch_desktop.sh")
-        desktop = Path("/Users/calderwong/Desktop/Hapa Living Comic.command")
+        launcher = REPO_ROOT / "scripts/launch_desktop.sh"
         self.assertTrue(launcher.exists())
         self.assertTrue(os.access(launcher, os.X_OK))
         text = launcher.read_text()
+        self.assertIn("HAPA_LIVING_COMIC_ROOT", text)
+        self.assertIn("HAPA_LTX_NODE_ROOT", text)
         self.assertIn("LIVING_COMIC_PORT", text)
         self.assertIn("8776", text)
         self.assertIn("living-comic-book", text)
         self.assertIn("launch-local-mlx.sh", text)
-        self.assertTrue(desktop.exists())
-        self.assertTrue(os.access(desktop, os.X_OK))
 
     def test_swiftui_uses_dedicated_living_comic_port_and_checks_http_status(self):
-        swift = Path("/Users/calderwong/Desktop/hapa-living-comic/swiftui/LivingComicBook/LivingComicBook/main.swift")
+        swift = REPO_ROOT / "swiftui/LivingComicBook/LivingComicBook/main.swift"
         text = swift.read_text()
         self.assertIn("http://127.0.0.1:8776", text)
         self.assertIn("HTTPURLResponse", text)

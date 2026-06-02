@@ -25,7 +25,7 @@ runtime/                   generated local projects/assets (created at runtime)
 ## Run backend
 
 ```bash
-cd /Users/calderwong/Desktop/hapa-living-comic
+cd "$HAPA_LIVING_COMIC_ROOT"
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -52,22 +52,22 @@ curl -X POST http://127.0.0.1:8776/api/generate   -H 'Content-Type: application/
 
 ## Desktop launcher
 
-A one-click launcher was created at:
+A one-click launcher can point at this repo and the local Hapa LTX Node:
 
 ```text
-/Users/calderwong/Desktop/Hapa Living Comic.command
+$HAPA_LIVING_COMIC_DESKTOP_LAUNCHER
 ```
 
 Double-click it to:
 
-1. ensure the Hapa LTX Node is running at `http://127.0.0.1:8753`, using `/Users/calderwong/Documents/Codex/2026-05-19/thoroughly-review-the-hapa-worldbuilding-wiki/hapa-ltx-node/scripts/launch-local-mlx.sh`;
+1. ensure the Hapa LTX Node is running at `http://127.0.0.1:8753`, using `$HAPA_LTX_NODE_ROOT/scripts/launch-local-mlx.sh`;
 2. start this app's backend at `http://127.0.0.1:8776` with `LIVING_COMIC_PROVIDER=hapa-ltx` and `LIVING_COMIC_TTS_PROVIDER=mac-say`;
 3. launch the SwiftUI viewer.
 
 Logs go to:
 
 ```text
-/Users/calderwong/Desktop/hapa-living-comic/logs
+$HAPA_LIVING_COMIC_ROOT/logs
 ```
 
 ## Real local generator mode
@@ -75,12 +75,13 @@ Logs go to:
 With the Hapa LTX Node already running:
 
 ```bash
-cd /Users/calderwong/Desktop/hapa-living-comic
+cd "$HAPA_LIVING_COMIC_ROOT"
 export PYTHONPATH=backend
 export LIVING_COMIC_PROVIDER=hapa-ltx
 export LIVING_COMIC_TTS_PROVIDER=mac-say
 export HAPA_LTX_URL=http://127.0.0.1:8753
-export HAPA_LTX_TOKEN_FILE="/Users/calderwong/Documents/Codex/2026-05-19/thoroughly-review-the-hapa-worldbuilding-wiki/hapa-ltx-node/.node_token"
+export HAPA_LTX_NODE_ROOT=/path/to/hapa-ltx-node
+export HAPA_LTX_TOKEN_FILE="$HAPA_LTX_NODE_ROOT/.node_token"
 python3 -m living_comic.cli "Calder and Thor open the living comic engine" --provider hapa-ltx --tts-provider mac-say --panels 1
 ```
 
@@ -116,11 +117,23 @@ export LIVING_COMIC_TTS_CMD='mlx-audio tts --text {text_json} --ref {reference_c
 In a second terminal, with backend running:
 
 ```bash
-cd /Users/calderwong/Desktop/hapa-living-comic/swiftui/LivingComicBook
+cd "$HAPA_LIVING_COMIC_ROOT/swiftui/LivingComicBook"
 swift run
 ```
 
 Click **Generate Full Issue**. Click panels to activate/zoom the layout.
+
+The primary shell also includes **Docs / README** (`⌘?`), which opens the in-app Markdown reader. The reader loads repo docs from the backend allowlist (`README.md`, `AGENTS.md`, `docs/FEATURE_PARITY.md`), shows source/provenance paths, renders Markdown with SwiftUI text, and labels missing docs as `DOCS MISSING` instead of showing a blank panel.
+
+## Node-app compliance and parity
+
+This is an active Hapa prototype node app with partial-but-truthful API / CLI / UI parity:
+
+- API: backend health, capabilities, issue generation/list/read, asset serving, and whitelisted docs endpoints.
+- CLI: `python3 -m living_comic.cli`, `scripts/generate_mock_issue.sh`, `scripts/run_backend.sh`, and `scripts/launch_desktop.sh`.
+- UI: native SwiftUI viewer/editor, media playback, generation controls, status/error text, and in-app Docs / README Markdown surface.
+
+See `AGENTS.md` for AI-agent operating context and `docs/FEATURE_PARITY.md` for the capability-by-capability parity matrix, verification notes, and caveats. Current compliance state: **partial verified prototype**; real Hapa LTX generation remains dependent on the external local Hapa LTX Node.
 
 ## Hermes integration
 
@@ -166,7 +179,7 @@ SwiftUI/native comic viewer/editor prototype for Hapa narrative panels, runtime 
 ### Current status
 
 - Status: **prototype narrative app**.
-- Local source root: `/Users/calderwong/Desktop/hapa-living-comic`.
+- Local source root: `$HAPA_LIVING_COMIC_ROOT`.
 - This README is intended to be useful to both human operators and future agents: it should explain what the node is for, what it consumes, what it emits, how it connects to other Hapa nodes, and what should stay out of git.
 
 ### Inputs
@@ -185,16 +198,16 @@ SwiftUI/native comic viewer/editor prototype for Hapa narrative panels, runtime 
 
 ### Related Hapa nodes
 
-- [Hapa AG / Dev Proto](file:///Users/calderwong/Desktop/hapa-dev-proto) — Primary local-first app; many nodes feed it cards, assets, chat, debug, or projection data.
-- [Hapa Worldbuilding Wiki](file:///Users/calderwong/Desktop/Hapa_Worldbuilding_Wiki) — Canonical Markdown graph for lore, nodes, names, cards, systems, and provenance.
-- [Overwatch](file:///Users/calderwong/Desktop/.Overwatch) — Operations map: inventory, source index, task inbox, protocols, and runbooks.
-- [Hapa Telemetry Node](file:///Users/calderwong/Desktop/hapa-telemetry-node) — Discovery/monitoring hub for node health, capabilities, launchers, and relationships.
-- [Hapa Keys Node](file:///Users/calderwong/Desktop/hapa-keys-node) — Local key vault used by authenticated nodes and tools.
-- [Hapa Lore Node](file:///Users/calderwong/Desktop/hapa-lore-node) — Chronicle/canon service for daily progress, lore, and searchable wisdom.
-- [Hapa Anvil Node](file:///Users/calderwong/Desktop/hapa-anvil-node) — Card standardization/evaluation/forge node for turning raw card ideas into usable artifacts.
-- [Hapa Janus World Node](file:///Users/calderwong/Desktop/hapa-janus-world-node) — World-state truth kernel and event tape for Janus/desktop simulation work.
-- [Hapa MLX Station](file:///Users/calderwong/hapa-mlx-station) — Apple Silicon media-generation station that produces visual/audio assets for cards, wiki, and production runs.
-- [Hapa Lance Node](file:///Users/calderwong/Desktop/hapa-lance-node) — Local indexing/projection layer for cards, wiki chunks, embeddings, and multimodal records.
+- `hapa-dev-proto` — Primary local-first app; many nodes feed it cards, assets, chat, debug, or projection data.
+- `Hapa_Worldbuilding_Wiki` — Canonical Markdown graph for lore, nodes, names, cards, systems, and provenance.
+- `.Overwatch` — Operations map: inventory, source index, task inbox, protocols, and runbooks.
+- `hapa-telemetry-node` — Discovery/monitoring hub for node health, capabilities, launchers, and relationships.
+- `hapa-keys-node` — Local key vault used by authenticated nodes and tools.
+- `hapa-lore-node` — Chronicle/canon service for daily progress, lore, and searchable wisdom.
+- `hapa-anvil-node` — Card standardization/evaluation/forge node for turning raw card ideas into usable artifacts.
+- `hapa-janus-world-node` — World-state truth kernel and event tape for Janus/desktop simulation work.
+- `hapa-mlx-station` — Apple Silicon media-generation station that produces visual/audio assets for cards, wiki, and production runs.
+- `hapa-lance-node` — Local indexing/projection layer for cards, wiki chunks, embeddings, and multimodal records.
 
 ### Operating contract
 

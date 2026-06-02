@@ -11,10 +11,6 @@ from typing import Any, Dict, Optional
 
 from living_comic.models import ComicIssue, ComicPanel
 
-DEFAULT_LTX_NODE_ROOT = Path(
-    "/Users/calderwong/Documents/Codex/2026-05-19/thoroughly-review-the-hapa-worldbuilding-wiki/hapa-ltx-node"
-)
-
 
 class HapaLTXNodeClient:
     """Small HTTP client for the local Hapa LTX Node.
@@ -48,8 +44,9 @@ class HapaLTXNodeClient:
         env_file = os.environ.get("HAPA_LTX_TOKEN_FILE")
         if env_file:
             candidates.append(Path(env_file).expanduser())
-        node_root = Path(os.environ.get("HAPA_LTX_NODE_ROOT") or DEFAULT_LTX_NODE_ROOT)
-        candidates.append(node_root / ".node_token")
+        node_root = os.environ.get("HAPA_LTX_NODE_ROOT")
+        if node_root:
+            candidates.append(Path(node_root).expanduser() / ".node_token")
         for path in candidates:
             try:
                 if path.exists():

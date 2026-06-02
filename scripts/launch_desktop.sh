@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/Users/calderwong/Desktop/hapa-living-comic"
-LTX_DIR="/Users/calderwong/Documents/Codex/2026-05-19/thoroughly-review-the-hapa-worldbuilding-wiki/hapa-ltx-node"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="${HAPA_LIVING_COMIC_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+LTX_DIR="${HAPA_LTX_NODE_ROOT:-}"
 LOG_DIR="$APP_DIR/logs"
 mkdir -p "$LOG_DIR"
 
@@ -25,7 +26,7 @@ ensure_ltx_node() {
     return 0
   fi
   if [ ! -d "$HAPA_LTX_NODE_ROOT" ]; then
-    echo "Hapa LTX Node folder not found: $HAPA_LTX_NODE_ROOT" >&2
+    echo "Hapa LTX Node folder not configured or not found. Set HAPA_LTX_NODE_ROOT before real local-node mode." >&2
     return 1
   fi
   echo "Starting Hapa LTX Node..."
