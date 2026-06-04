@@ -1,7 +1,7 @@
 <!-- HAPA-CONNECTIVITY-DOC:BEGIN -->
 # Hapa Connectivity
 
-Generated: 2026-06-02T04:36:00Z
+Generated: 2026-06-03T23:17:21.545Z
 
 This file is a publication-safe cross-link for humans and AIs. It describes how this repo fits into the Hapa system without embedding private local paths, secrets, heavy assets, DB payloads, or generated media.
 
@@ -57,13 +57,14 @@ This repo is a user-facing Hapa app surface that should link back to the shared 
 ## Publication Boundary
 
 - Publication strategy: `publish_source_with_vault_pointers`
-- Publication wave: `wave_1_clean_no_remote` after local publication-boundary commit
-- Current assembly gate: `local_pointer_until_remote_exists`
+- Publication wave: `wave_2_small_dirty_no_remote`
+- Current assembly gate: `local_pointer_after_review`
 
 Source code, docs, schemas, and tiny fixtures are Git candidates after preflight. Runtime DBs, WAL/SHM files, local tokens, generated media, model weights, logs, app bundles, and vault exports stay out of public Git and should be represented by pointer manifests or rebuild instructions.
 
 ## Open Gates
 
+- Review 9 dirty working-tree entries before pinning.
 - Choose GitHub owner, repo name, and private/public visibility before remote creation.
 
 ## Safe Next Commands
@@ -81,8 +82,7 @@ Run the fastest local checks that exist for this repo before publication or asse
 
 ```bash
 git status --short
-PYTHONPATH=backend python3 -m unittest discover -s tests
-cd swiftui/LivingComicBook && swift build
+python -m compileall .
 ```
 
 <!-- HAPA-CONNECTIVITY-DOC:END -->
